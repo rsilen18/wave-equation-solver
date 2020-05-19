@@ -38,4 +38,5 @@ for n = 1:M
     xlim([a b])
     ylim([-2 2])
     pause(0.01)
+    
 end
