@@ -23,7 +23,7 @@ for n = 1:M
    u1 = f1(x,t,c,k);
    u2 = f2(x,t,c,k);
    u3 = f3(x,t,c,k);
-%{
+
    % Figure of Solution 1 (Forward Propagating Wave)   
    figure(1)
    plot(x,u1);
@@ -32,8 +32,7 @@ for n = 1:M
    title('Wave Equation Solution: Backward Propagation')
    xlabel('x')
    ylabel('u')
-%}
-%{
+   
    % Figure of Solution 2 (Backward Propagating Wave)
    figure(1)
    plot(x,u2);
@@ -43,7 +42,6 @@ for n = 1:M
    xlabel('x')
    ylabel('u')   
    
-%}
    % Figure of Solution 3 (Standing Wave)  
    figure(1)
    plot(x,u3);
