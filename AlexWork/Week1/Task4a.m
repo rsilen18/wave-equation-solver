@@ -7,20 +7,35 @@
 % Author: Alexandre Ait-Ettajer
 % Date: May 19, 2020 
 
-N = 10;
-M = 100;
+% Initialize Values for Particular solve
+N = 100;
+M = 400;
 t_f = 4;
+c = .5;
 a = 0;
 b = 1;
 dx = (b-a)/N;
 x = linspace(a,b+dx,(N+2)); % Add Ghost Point
 dt = t_f/M;
 assert(x(2)-x(1) == dx);
+assert(c^2*dt^2/dx^2 < 1);
 
-xt = ones(N,M);
-
-u_old = solver(;
+xt = ones(M,N+2);
 
 for n = 1:M
-    
+    u_n = 0;
+    u_n_1 = 0;
+    if (n == 2)
+        u_n = xt(n-1,:);
+        u_n_1 = xt(n-1,:);
+    elseif (n ~= 1)
+        u_n_1 = xt(n-2,:);
+        u_n = xt(n-1,:);
+    end
+    xt(n,:) = solver(u_n,u_n_1,dt*(n-1),dt,x,dx,c);
+    figure(1)
+    plot(x,xt(n,:));
+    xlim([a b])
+    ylim([-2 2])
+    pause(0.01)
 end
