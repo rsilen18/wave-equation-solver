@@ -38,5 +38,6 @@ function y = f(x)
 end
 
 function y = v(x)
-    y = -sin(3*pi/2*x);
+%     y = -sin(3*pi/2*x);
+    y = x*0;
 end
