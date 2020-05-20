@@ -13,9 +13,11 @@ b = 1;
 
 % Define x and t interval
 x = linspace(a,b,(N));
+t = linspace(a,b,M);
 dx = (b-a)/(N-1);
-dt = t_f/M;
+dt = t_f/(M-1);
 assert(x(2)-x(1) == dx);
+xt1 = ones(
 
 % Loop over 
 for n = 1:M
@@ -53,6 +55,8 @@ for n = 1:M
 
    pause(t_f/M);
 end
+
+
 
 % Solution 1 to the 1-D wave eqaution
 function u = f1(x,t,c,k)

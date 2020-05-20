@@ -16,7 +16,9 @@ a = 0;
 b = 1;
 dx = (b-a)/N;
 x = linspace(a,b+dx,(N+2)); % Add Ghost Point
-dt = t_f/M;
+t = linspace(0,t_f,M);
+dt = t_f/(M-1);
+assert(t(2)-t(1) == dt);
 assert(x(2)-x(1) == dx);
 assert(c^2*dt^2/dx^2 < 1);
 
@@ -37,6 +39,15 @@ for n = 1:M
     plot(x,xt(n,:));
     xlim([a b])
     ylim([-2 2])
-    pause(0.01)
-    
+    title('Wave Equation Solution: BVP Snapshot')
+    xlabel('x')
+    ylabel('u')
+    pause(0.01) 
 end
+
+mesh(x,t,xt)
+xlim([a b])
+title('Wave Equation Solution: BVP Over Time')
+xlabel('x (Distance)')
+ylabel('t (Time)')
+zlabel('u (Function Value)')
