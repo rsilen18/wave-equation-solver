@@ -1,66 +1,54 @@
-% set-up
-N = input("Enter N: ");     % resolution in x-direction
-c = input("Enter c: ");     % wave speed
-t_f = input("Enter final time: ");
-a = 0;  % left bound on x
-b = 3*pi/2;  % right bound on x
-x = linspace(a,b,N+1);
-dx = (b-a)/N;
-dt = .01;
-sigma = c*dt/dx
-assert(x(2)-x(1)==dx);
+% 1-D Finite Difference Method Wave Eqn Solver
+% BCs: u(a,t) = l(t), u_x(b,t) = 0
+% ICs: u(x,0) = u_0(x), u_t(x,0) = v_0(x)
 
-% evaluation
-u = zeros(N+2,1);
-% step 1 - initial condition
-for j = 1:N+1
-   u(j) = u_0(x(j)); 
-end
-% step 2 - initial ghost point
-u(N+2) = u(N);
-% step 3 - first time step
-new = zeros(N+2,1);
-new(1) = 0;
-for j = 2:N+1
-   new(j) = (1-sigma^2)*u(j)+dt*v_0(x(j))+sigma^2/2*(u(j-1)+u(j+1)); 
-end
-% step 4 - first time step ghost point
-new(N+2) = new(N);
-u = [u,new];
-% step 5 - n = time, j = space
-for n = 2:(t_f/dt+1)
-   new = zeros(N+2,1);
-   % step 6
-   for j = 2:N+1
-        new(j) = 2*u(j,n)-u(j,n-1)+sigma^2*(u(j+1,n)-2*u(j,n)+u(j-1,n));
-   end
-   new(N+2) = new(N);
-   u = [u,new];
-end
-
-% plotting
-
-% 3-d plot
-figure(1);
-surf(u);
-shading interp
-xlabel("x");
-ylabel("t");
-zlabel("u");
-
-% 2-d animation
-for t = 1:(t_f/dt+1)
-   figure(2);
-   plot(x,u(1:N+1,t)); 
-   pause(.01);
-end
-
-
-% given functions
-function value = u_0(x)
-    value = sin(x);
-end
-
-function value =  v_0(x)
-    value = -sin(x);
+function [u,e] = waves_fdm_1d(N,sigma,c,t_f,icase,plot_flag)
+    [a,b,u_0,v_0,left] = waves_fdm_1d_defs(icase);
+    dx = (b-a)/N;
+    nt = t_f/(sigma*dx/c);
+    nt = ceil(nt);
+    dt = t_f/nt;
+    x = linspace(a,b,N+1);
+    
+    % initial conditions
+    unm1 = zeros(1,N+1);
+    for i = 1:N+1
+        unm1(i) = u_0(x(i));
+    end
+    ghost = unm1(N);
+    un = zeros(1,N+1);
+    un(1) = left(dt);
+    for i = 2:N
+       un(i) =  (1-sigma^2)*unm1(i)+dt*v_0(x(i))+sigma^2/2*(unm1(i-1)+unm1(i+1));
+    end
+    un(N+1) = (1-sigma^2)*unm1(i)+dt*v_0(x(i))+sigma^2/2*(unm1(i-1)+ghost);
+    ghost = un(N);
+    % time loop
+    j = 2;
+    while j*dt <= t_f
+        unp1 = zeros(1,N+1);
+        unp1(1) = left(j*dt);
+        for i = 2:N
+            unp1(i) = 2*un(i)-unm1(i)+sigma^2*(un(i+1)-2*un(i)+un(i-1));
+        end
+        unp1(N+1) = 2*un(i)-unm1(i)+sigma^2*(ghost-2*un(i)+un(i-1));
+        ghost = unp1(N);
+        % optionally plot
+        if (plot_flag)
+           plot(x,unp1);
+           xlim([a b]);
+           ylim([-2 2]);
+           xlabel("x step");
+           ylabel("displacement: u(x,t)");
+           str = sprintf("1-D Wave at t=%.2f",j*dt);
+           title(str);
+           pause(.001);
+        end
+        unm1 = un;
+        un = unp1;
+        j = j+1;
+    end
+    % assignment of u at final time step
+    u = unp1;
+    e = 0;
 end
