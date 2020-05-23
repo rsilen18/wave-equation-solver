@@ -50,5 +50,5 @@ function [u,e] = waves_fdm_1d(N,sigma,c,t_f,icase,plot_flag)
     end
     % assignment of u at final time step
     u = unp1;
-    e = 0;
+    e = max(abs(waves_analytic_1d(u_0,v_0,a,b,c,x,t_f)-u));
 end
