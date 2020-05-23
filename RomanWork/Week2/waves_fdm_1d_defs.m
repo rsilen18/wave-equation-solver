@@ -31,5 +31,11 @@ function [a,b,u_0,v_0,left] = waves_fdm_1d_defs(icase)
             u_0 = @(x) sin(x);
             v_0 = @(x) -sin(x);
             left = @(t) t;
+        case 5
+            a = 0;
+            b = 1;
+            u_0 = @(x) sin(x);
+            v_0 = @(x) -sin(x);
+            left = @(t) 0;
     end
 end
