@@ -26,5 +26,24 @@ plot(xi,abs(d_xx-symbol_4));
 legend("Re(S_2)-(-k^2)","Re(S_4)-(-k^2)");
 xlabel("xi");
 ylabel("Error");
-title("Error plot");
+title("Error plot: d_xx");
 hold off
+
+d_x = imag(1i*k);
+symbol_1 = imag(cos(xi)+1i*sin(xi)-1);
+
+figure(3)
+plot(xi,d_x);
+hold on
+plot(xi,symbol_1);
+legend("d_x","Imag(S_1)");
+title("Imag(S) vs xi plot");
+xlabel("xi");
+ylabel("Re(S)");
+hold off;
+
+figure(4)
+plot(xi,abs(d_x-symbol_1));
+xlabel("xi");
+ylabel("Error");
+title("Error plot: d_x");
