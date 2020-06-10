@@ -33,4 +33,5 @@ figure(2)
 loglog(h,errors,'o',h,h2,h,h4);
 xlabel("h");
 ylabel("|e|_{\infty}");
-title("error vs. dx");
+title("Truncation Error");
+legend("error","h^2","h^4");

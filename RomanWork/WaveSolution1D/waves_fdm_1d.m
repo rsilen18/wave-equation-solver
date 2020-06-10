@@ -60,8 +60,12 @@ function [u,e] = waves_fdm_1d(def,sigma,plot_flag,order)
         x = linspace(def.a-2*dx,def.b+2*dx,def.N+5);
         
         % first time step
-        unm1 = waves_analytic_1d(def.f,def.g,def.c,x,0);
-        un = waves_analytic_1d(def.f,def.g,def.c,x,dt);
+        unm1 = zeros(def.N+5);
+        un = zeros(def.N+5);
+        for i = 1:def.N+5
+            unm1(i) = waves_analytic_1d(def.f,def.g,def.c,x(i),0);
+            un(i) = waves_analytic_1d(def.f,def.g,def.c,x(i),dt);
+        end
         % remaining steps
         n = 2;
         while n*dt <= def.t_f
