@@ -10,7 +10,7 @@ function [u,e] = waves_fdm_1d(def,sigma,plot_flag,order)
     sigma = def.c*dt/dx;
     
     % to account for index offset in 4th order
-    function index = j_(i)
+    function index = x_(i)
         index = i+3;
     end
     
@@ -61,23 +61,35 @@ function [u,e] = waves_fdm_1d(def,sigma,plot_flag,order)
         
         % first time step
         unm1 = zeros(def.N+5);
+        v_0 = zeros(def.N+5);
+        for j = 1:def.N+5
+            unm1(j) = waves_analytic_1d(def.f,def.g,def.c,x(j),0);
+            v_0(j) = def.g(x(j));
+        end
         un = zeros(def.N+5);
-        for i = 1:def.N+5
-            unm1(i) = waves_analytic_1d(def.f,def.g,def.c,x(i),0);
-            un(i) = waves_analytic_1d(def.f,def.g,def.c,x(i),dt);
+        un(x_(-2)) = waves_analytic_1d(def.f,def.g,def.c,x(x_(-2)),dt);
+        un(x_(-1)) = waves_analytic_1d(def.f,def.g,def.c,x(x_(-1)),dt);
+        un(x_(def.N+1)) = waves_analytic_1d(def.f,def.g,def.c,x(x_(def.N+1)),dt);
+        un(x_(def.N+2)) = waves_analytic_1d(def.f,def.g,def.c,x(x_(def.N+2)),dt);
+        for j = 0:def.N
+            order2 = unm1(x_(j+1))-2*unm1(x_(j))+unm1(x_(j-1));
+            order4 = unm1(x_(j+2))-4*unm1(x_(j+1))+6*unm1(x_(j))-4*unm1(x_(j-1))+unm1(x_(j-2));
+            order2v = v_0(x_(j+1))-2*v_0(x_(j))+v_0(x_(j-1));
+            order4v = v_0(x_(j+2))-4*v_0(x_(j+1))+6*v_0(x_(j))-4*v_0(x_(j-1))+v_0(x_(j-2));
+            un(x_(j)) = unm1(x_(j))+dt*v_0(x_(j))+sigma^2/2*(order2-1/12*order4)+sigma^2*dt/6*(order2v-1/12*order4v);
         end
         % remaining steps
         n = 2;
         while n*dt <= def.t_f
             unp1 = zeros(1,def.N+5);
-            unp1(j_(-2)) = waves_analytic_1d(def.f,def.g,def.c,x(j_(-2)),n*dt);
-            unp1(j_(-1)) = waves_analytic_1d(def.f,def.g,def.c,x(j_(-1)),n*dt);
-            unp1(j_(def.N+1)) = waves_analytic_1d(def.f,def.g,def.c,x(j_(def.N+1)),n*dt);
-            unp1(j_(def.N+2)) = waves_analytic_1d(def.f,def.g,def.c,x(j_(def.N+2)),n*dt);
+            unp1(x_(-2)) = waves_analytic_1d(def.f,def.g,def.c,x(x_(-2)),n*dt);
+            unp1(x_(-1)) = waves_analytic_1d(def.f,def.g,def.c,x(x_(-1)),n*dt);
+            unp1(x_(def.N+1)) = waves_analytic_1d(def.f,def.g,def.c,x(x_(def.N+1)),n*dt);
+            unp1(x_(def.N+2)) = waves_analytic_1d(def.f,def.g,def.c,x(x_(def.N+2)),n*dt);
             for j = 0:def.N
-                order2 = un(j_(j+1))-2*un(j_(j))+un(j_(j-1));
-                order4 = un(j_(j+2))-4*un(j_(j+1))+6*un(j_(j))-4*un(j_(j-1))+un(j_(j-2));
-                unp1(j_(j)) = 2*un(j_(j))-unm1(j_(j))+sigma^2*(order2-1/12*order4)+1/12*sigma^4*order4;
+                order2 = un(x_(j+1))-2*un(x_(j))+un(x_(j-1));
+                order4 = un(x_(j+2))-4*un(x_(j+1))+6*un(x_(j))-4*un(x_(j-1))+un(x_(j-2));
+                unp1(x_(j)) = 2*un(x_(j))-unm1(x_(j))+sigma^2*(order2-1/12*order4)+1/12*sigma^4*order4;
             end
             % optionally plot
             if (plot_flag)
@@ -95,7 +107,7 @@ function [u,e] = waves_fdm_1d(def,sigma,plot_flag,order)
             n = n+1;
         end
         % assignment of u at final time step
-        u = unp1(j_(0):j_(def.N));
-        e = abs(u-waves_analytic_1d(def.f,def.g,def.c,x(j_(0):j_(def.N)),def.t_f));
+        u = unp1(x_(0):x_(def.N));
+        e = abs(u-waves_analytic_1d(def.f,def.g,def.c,x(x_(0):x_(def.N)),def.t_f));
     end
 end
