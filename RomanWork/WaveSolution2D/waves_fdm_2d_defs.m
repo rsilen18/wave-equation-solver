@@ -17,13 +17,13 @@ function [a_x,b_x,a_y,b_y,c,N,t_f,u_0,v_0,left,right,bottom,top] = waves_fdm_2d_
     switch icase
         case 1
             a_x = 0;
-            b_x = 1;
+            b_x = 2;
             a_y = 0;
-            b_y = 1;
-            c = 1;
+            b_y = 3;
+            c = 6;
             N = 100;
-            t_f = 10;
-            u_0 = @(x,y) x*y*(1-x)*(1-y);
+            t_f = 3;
+            u_0 = @(x,y) x*y*(2-x)*(3-y);
             v_0 = @(x,y) sin(2*pi*x);
             left = @(y,t) 0;
             right = @(y,t) 0;
