@@ -1,7 +1,7 @@
 % driver code for waves_fdm_1d.m
 sigma = 0.5; % CFL condition: sigma <= 1
 icase = 1;  % flag for problem definition
-order = 4;  % 2nd or 4th order precision
+order = 6;  % 2nd or 4th order precision
 plot_flag = true;    % flag for turning on plot animation
 
 % problem definition
@@ -31,9 +31,11 @@ end
 h2 = h.^2;
 h3 = h.^3;
 h4 = h.^4;
+h5 = h.^5;
+h6 = h.^6;
 figure(2)
-loglog(h,errors,'o',h,h2,h,h3,h,h4);
+loglog(h,errors,'o',h,h2,h,h3,h,h4,h,h5,h,h6);
 xlabel("h");
 ylabel("|e|_{\infty}");
 title("Truncation Error");
-legend("error","h^2","h^3","h^4");
+legend("error","h^2","h^3","h^4","h^5","h^6");
