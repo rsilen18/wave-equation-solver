@@ -1,7 +1,7 @@
 % driver code for waves_fdm_1d.m
-sigma = 0.5; % CFL condition: sigma <= 1
+sigma = 0.2; % CFL condition: sigma <= 1
 icase = 1;  % flag for problem definition
-order = 6;  % 2nd or 4th order precision
+order = 2;  % 2nd or 4th order precision
 plot_flag = true;    % flag for turning on plot animation
 
 % problem definition
@@ -16,17 +16,22 @@ plot_flag = true;    % flag for turning on plot animation
 % hold off
 % plot(x,waves_tz_1d(def,sigma,true));
 
+
+
 % Convergence study
 icase = 1;
 plot_flag = false;
 h = [.1 .01 .001 ];
 N = [10 100 1000 ];
 errors = zeros(1,3);
+errors_tz = zeros(1,3);
 for i = 1:3
     disp(i);
     def.N = N(i);
     [u,e] = waves_fdm_1d(def,sigma,plot_flag,order);
+    [u_tz,e_tz] = waves_tz_1d(def,sigma,plot_flag,order);
     errors(i) = max(e);
+    errors_tz(i) = max(e_tz);
 end
 h2 = h.^2;
 h3 = h.^3;
@@ -34,8 +39,8 @@ h4 = h.^4;
 h5 = h.^5;
 h6 = h.^6;
 figure(2)
-loglog(h,errors,'o',h,h2,h,h3,h,h4,h,h5,h,h6);
+loglog(h,errors,'o',h,errors_tz,'o',h,h2,h,h3,h,h4,h,h5,h,h6);
 xlabel("h");
 ylabel("|e|_{\infty}");
 title("Truncation Error");
-legend("error","h^2","h^3","h^4","h^5","h^6");
+legend("error","error_{tz}","h^2","h^3","h^4","h^5","h^6");
