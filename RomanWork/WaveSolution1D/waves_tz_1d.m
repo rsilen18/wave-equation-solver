@@ -68,6 +68,15 @@ function val = v_4x(x,t)
     val = sin(x)*sin(t);
 end
 
+% v_xxxxt(x,t)
+function val = v_4xt(x,t)
+    val = sin(x)*cos(t);
+end
+
+function val = v_6x(x,t)
+    val = -sin(x)*sin(t);
+end
+
 % h = v_tt-c^2*v_xx
 function val = h(def,x,t)
     val = (def.c^2-1)*sin(x)*sin(t);
@@ -83,6 +92,26 @@ end
 
 function val = h_tt(def,x,t)
     val = (1-def.c^2)*sin(x)*sin(t);
+end
+
+function val = h_xxt(def,x,t)
+    val = (1-def.c^2)*sin(x)*cos(t);
+end
+
+function val = h_3t(def,x,t)
+    val = (1-def.c^2)*sin(x)*cos(t);
+end
+
+function val = h_4x(def,x,t)
+    val = (def.c^2-1)*sin(x)*sin(t);
+end
+
+function val = h_4t(def,x,t)
+    val = (def.c^2-1)*sin(x)*sin(t);
+end
+
+function val = h_xxtt(def,x,t)
+    val = (def.c^2-1)*sin(x)*sin(t);
 end
 
 % initial conditions
@@ -136,7 +165,7 @@ function un = BCs(def,sigma,x,order,dx,dt,un,n)
 %             f = @(u) [def.c^2/dx^2*(1/90*un(ja+3)-3/20*un(ja+2)+3/2*un(ja+1)-49/18*un(ja)+3/2*u(1)-3/20*u(2)+1/90*u(3))-def.left(n*dt);
 %                 def.c^4/dx^4*(-1/6*un(ja+3)+2*un(ja+2)-13/2*un(ja+1)+28/3*un(ja)-13/2*u(1)+2*u(2)-1/6*u(3));
 %                 def.c^6/dx^6*(un(ja+3)-6*un(ja+2)+15*un(ja+1)-20*un(ja)+15*u(1)-6*u(2)+u(3))];
-        f = @(u) [(1/90*un(ja+3)-3/20*un(ja+2)+3/2*un(ja+1)-49/18*un(ja)+3/2*u(1)-3/20*u(2)+1/90*u(3)-def.left(n*dt));
+        f = @(u) [(1/90*un(ja+3)-3/20*un(ja+2)+3/2*un(ja+1)-49/18*un(ja)+3/2*u(1)-3/20*u(2)+1/90*u(3)-v(x(ja),n*dt));
             (-1/6*un(ja+3)+2*un(ja+2)-13/2*un(ja+1)+28/3*un(ja)-13/2*u(1)+2*u(2)-1/6*u(3));
             (un(ja+3)-6*un(ja+2)+15*un(ja+1)-20*un(ja)+15*u(1)-6*u(2)+u(3))];
         f0 = f([0;0;0]);
@@ -158,7 +187,7 @@ function un = BCs(def,sigma,x,order,dx,dt,un,n)
 %                 1/d*(u(3)-4*u(2)+5*u(1)-5*un(jb-1)+4*un(jb-2)-un(jb-3)));
 %                 def.c^4/dx^5*(u(3)-4*u(2)+5*u(1)-5*un(jb-1)+4*un(jb-2)-un(jb-3))];
         f = @(u) [(u(1)-un(jb-1)-1/6*(u(2)-2*u(1)+2*un(jb-1)-un(jb-2))+...
-            1/d*(u(3)-4*u(2)+5*u(1)-5*un(jb-1)+4*un(jb-2)-un(jb-3)))-def.right(n*dt);
+            1/d*(u(3)-4*u(2)+5*u(1)-5*un(jb-1)+4*un(jb-2)-un(jb-3)))-v_x(x(jb),n*dt);
             (u(2)-2*u(1)+2*un(jb-1)-un(jb-2)+...
             1/d*(u(3)-4*u(2)+5*u(1)-5*un(jb-1)+4*un(jb-2)-un(jb-3)));
             (u(3)-4*u(2)+5*u(1)-5*un(jb-1)+4*un(jb-2)-un(jb-3))];
@@ -185,22 +214,13 @@ function un = first_time_step(def,sigma,x,order,dt,unm1)
         end
         if (order >= 4)
             un(j) = un(j) + ...
-                    dt^2/2*(def.c^2*v_xx(x(j),0)+h(def,x(j),0)) + ...
                     dt^3/6*(def.c^2*v_xxt(x(j),0)+h_t(def,x(j),0)) + ...
                     dt^4/24*(def.c^4*v_4x(x(j),0)+def.c^4*h_xx(def,x(j),0)+h_tt(def,x(j),0));
         end
         if (order >= 6)
-%                 un(j) = un(j) + ...
-%                         sigma^2/180*(unm1(j+3)-6*unm1(j+2)+15*unm1(j+1)-20*unm1(j)+15*unm1(j-1)-6*unm1(j-2)+unm1(j-3)) + ...
-%                         dt*sigma^2/540*(def.g(x(j+3))-6*def.g(x(j+2))+15*def.g(x(j+1))-20*def.g(x(j))+15*def.g(x(j-1))-6*def.g(x(j-2))+def.g(x(j-3))) + ...
-%                         dt*sigma^4/120*(def.g(x(j+2))-4*def.g(x(j+1))+6*def.g(x(j))-4*def.g(x(j-1))+def.g(x(j-2))) + ...
-%                         sigma^6/720*(unm1(j+3)-6*unm1(j+2)+15*unm1(j+1)-20*unm1(j)+15*unm1(j-1)-6*unm1(j-2)+unm1(j-3));
             un(j) = un(j) + ...
-                    sigma^2/180*(unm1(j+3)-6*unm1(j+2)+15*unm1(j+1)-20*unm1(j)+15*unm1(j-1)-6*unm1(j-2)+unm1(j-3)) + ...
-                    dt*sigma^2/540*(def.g(x(j+3))-6*def.g(x(j+2))+15*def.g(x(j+1))-20*def.g(x(j))+15*def.g(x(j-1))-6*def.g(x(j-2))+def.g(x(j-3))) + ...
-                    -sigma^4/(24*72)*(unm1(j+3)-6*unm1(j+2)+15*unm1(j+1)-20*unm1(j)+15*unm1(j-1)-6*unm1(j-2)+unm1(j-3)) + ...
-                    -dt*sigma^4/120*(def.g(x(j+3))-6*def.g(x(j+2))+15*def.g(x(j+1))-20*def.g(x(j))+15*def.g(x(j-1))-6*def.g(x(j-2))+def.g(x(j-3))) + ...
-                    sigma^6/720*(unm1(j+3)-6*unm1(j+2)+15*unm1(j+1)-20*unm1(j)+15*unm1(j-1)-6*unm1(j-2)+unm1(j-3));
+                    dt^5/120*(def.c^4*v_4xt(x(j),0)+def.c^2*h_xxt(def,x(j),0)+h_3t(def,x(j),0)) + ...
+                    dt^6/720*(def.c^6*v_6x(x(j),0)+def.c^4*h_4x(def,x(j),0)+h_xxtt(def,x(j),0));
         end
     end
 end
@@ -219,7 +239,8 @@ function unp1 = main_time_step(def,sigma,x,order,dt,unm1,un)
 %                 unp1(j) = unp1(j) + (4*sigma^2+sigma^6)/360*...
 %                 (un(j+3)-6*un(j+2)+15*un(j+1)-20*un(j)+15*un(j-1)-6*un(j-2)+un(j-3));
             unp1(j) = unp1(j) + (sigma^2/90-sigma^4/72+sigma^6/720)*...
-                (un(j+3)-6*un(j+2)+15*un(j+1)-20*un(j)+15*un(j-1)-6*un(j-2)+un(j-3));
+                (un(j+3)-6*un(j+2)+15*un(j+1)-20*un(j)+15*un(j-1)-6*un(j-2)+un(j-3)) + ...
+                def.c^2*dt^6/360*(h_xx(def,x(j),n*dt)+h_xxtt(def,x(j),0)+h_4t(def,x(j),0));
         end
     end
 end
