@@ -60,9 +60,29 @@ function val = v_xx(x,t)
     val = -sin(x)*sin(t);
 end
 
-% h = (u_e)_tt-c^2(u_e)_xx
+function val = v_xxt(x,t)
+    val = -sin(x)*cos(t);
+end
+
+function val = v_4x(x,t)
+    val = sin(x)*sin(t);
+end
+
+% h = v_tt-c^2*v_xx
 function val = h(def,x,t)
     val = (def.c^2-1)*sin(x)*sin(t);
+end
+
+function val = h_t(def,x,t)
+    val = (def.c^2-1)*sin(x)*cos(t);
+end
+
+function val = h_xx(def,x,t)
+    val = (1-def.c^2)*sin(x)*sin(t);
+end
+
+function val = h_tt(def,x,t)
+    val = (1-def.c^2)*sin(x)*sin(t);
 end
 
 % initial conditions
@@ -102,9 +122,9 @@ function un = BCs(def,sigma,x,order,dx,dt,un,n)
 
         % Neumann right BC - "way 1"
         A = [2/3 -1/12; -2 1];
-        b = [2/3*un(jb-1)-1/12*un(jb-2)+dx*def.right(n*dt);
-            -2*un(jb-1)+un(jb-2)+2*dx/sigma^2*(def.right((n+1)*dt)-...
-            2*def.right(n*dt)+def.right((n-1)*dt))];
+        b = [2/3*un(jb-1)-1/12*un(jb-2)+dx*v_x(x(jb),n*dt);
+            -2*un(jb-1)+un(jb-2)+2*dx/sigma^2*(v_x(x(jb),(n+1)*dt)-...
+            2*v_x(x(jb),n*dt)+v_x(x(jb),(n-1)*dt))];
         u = A\b;
         un(jb+1) = u(1);
         un(jb+2) = u(2);
@@ -165,9 +185,9 @@ function un = first_time_step(def,sigma,x,order,dt,unm1)
         end
         if (order >= 4)
             un(j) = un(j) + ...
-                    sigma^2/2*(-1/12*(unm1(j+2)-4*unm1(j+1)+6*unm1(j)-4*unm1(j-1)+unm1(j-2))) + ...
-                    dt*sigma^2/6*(def.g(x(j+1))-2*def.g(x(j))+def.g(x(j-1))-1/12*(def.g(x(j+2))-4*def.g(x(j+1))+6*def.g(x(j))-4*def.g(x(j-1))+def.g(x(j-2)))) + ...
-                    sigma^4/24*(unm1(j+2)-4*unm1(j+1)+6*unm1(j)-4*unm1(j-1)+unm1(j-2));
+                    dt^2/2*(def.c^2*v_xx(x(j),0)+h(def,x(j),0)) + ...
+                    dt^3/6*(def.c^2*v_xxt(x(j),0)+h_t(def,x(j),0)) + ...
+                    dt^4/24*(def.c^4*v_4x(x(j),0)+def.c^4*h_xx(def,x(j),0)+h_tt(def,x(j),0));
         end
         if (order >= 6)
 %                 un(j) = un(j) + ...
@@ -192,7 +212,8 @@ function unp1 = main_time_step(def,sigma,x,order,dt,unm1,un)
     for j = 1+order/2:n-order/2
         unp1(j) = 2*un(j)-unm1(j)+sigma^2*(un(j+1)-2*un(j)+un(j-1))+h(def,x(j),n*dt);
         if (order >= 4)
-            unp1(j) = unp1(j) + (sigma^4-sigma^2)/12*(un(j+2)-4*un(j+1)+6*un(j)-4*un(j-1)+un(j-2));
+            unp1(j) = unp1(j) + (sigma^4-sigma^2)/12*(un(j+2)-4*un(j+1)+6*un(j)-4*un(j-1)+un(j-2)) + ...
+                def.c^2*dt^4/12*h_xx(def,x(j),n*dt) + dt^4/12*h_tt(def,x(j),n*dt);
         end
         if (order >= 6)
 %                 unp1(j) = unp1(j) + (4*sigma^2+sigma^6)/360*...
