@@ -14,7 +14,7 @@ function [u,e] = waves_tz_1d(def,sigma,plot_flag,order)
     un = BCs(def,sigma,x,order,dx,dt,un,1);
     n = 2;
     while n*dt <= def.t_f
-        unp1 = main_time_step(def,sigma,x,order,dt,unm1,un);
+        unp1 = main_time_step(def,sigma,x,order,dt,unm1,un,n);
         unp1 = BCs(def,sigma,x,order,dx,dt,unp1,n);
         % optionally plot
         if (plot_flag)
@@ -38,7 +38,7 @@ function [u,e] = waves_tz_1d(def,sigma,plot_flag,order)
     
 end
 
-%%% set up functions below
+%%% forcing functions
 
 % v(x,t): our "exact soln"
 function val = v(x,t)
@@ -113,6 +113,8 @@ end
 function val = h_xxtt(def,x,t)
     val = (def.c^2-1)*sin(x)*sin(t);
 end
+
+%%% set up functions
 
 % initial conditions
 function unm1 = ICs(def,x)
@@ -226,10 +228,10 @@ function un = first_time_step(def,sigma,x,order,dt,unm1)
 end
 
 % time steps for n >= 2
-function unp1 = main_time_step(def,sigma,x,order,dt,unm1,un)
-    n = size(x,2);
-    unp1 = zeros(1,n);
-    for j = 1+order/2:n-order/2
+function unp1 = main_time_step(def,sigma,x,order,dt,unm1,un,n)
+    m = size(x,2);
+    unp1 = zeros(1,m);
+    for j = 1+order/2:m-order/2
         unp1(j) = 2*un(j)-unm1(j)+sigma^2*(un(j+1)-2*un(j)+un(j-1))+h(def,x(j),n*dt);
         if (order >= 4)
             unp1(j) = unp1(j) + (sigma^4-sigma^2)/12*(un(j+2)-4*un(j+1)+6*un(j)-4*un(j-1)+un(j-2)) + ...
