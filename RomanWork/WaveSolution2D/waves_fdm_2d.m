@@ -3,7 +3,7 @@
 %      u(x,0,t)=u(x,b,t) = 0        0 <= x <= a
 % ICs: u(x,y,0) = f(x,y), u_t(x,y,0) = g(x,y)
 
-function [u,e] = waves_fdm_2d(def,sigma_x,sigma_y,plot_flag,order)
+function u = waves_fdm_2d(def,sigma_x,sigma_y,plot_flag,order)
     dx = (def.b_x-def.a_x)/def.N;
     nt = def.t_f/(sigma_x*dx/def.c);
     nt = ceil(nt);
@@ -21,11 +21,11 @@ function [u,e] = waves_fdm_2d(def,sigma_x,sigma_y,plot_flag,order)
     
     unm1 = ICs(def,x,y);
     un = first_time_step(def,sigma_x,sigma_y,x,y,order,dt,unm1);
-    un = BCs(def,sigma_x,sigma_y,x,y,order,dx,dy,dt,un,1);
+    un = BCs(def,x,y,order,dx,dy,un);
     n = 2;
     while n*dt <= def.t_f
         unp1 = main_time_step(sigma_x,sigma_y,x,y,order,unm1,un);
-        unp1 = BCs(def,sigma_x,sigma_y,x,y,order,dx,dy,dt,unp1,n);
+        unp1 = BCs(def,x,y,order,dx,dy,unp1);
         % optionally plot
         if (plot_flag)
            surf(x,y,unp1);
@@ -45,9 +45,7 @@ function [u,e] = waves_fdm_2d(def,sigma_x,sigma_y,plot_flag,order)
         n = n+1;
     end
     % assignment of u at final time step
-    u = unp1(1+order/2:size(x,2)-order/2,1+order/2:size(y,2));
-    e = 0;
-%     e = abs(u-waves_analytic_1d(def.f,def.g,def.c,x,def.t_f));
+    u = unp1(1+order/2:size(x,2)-order/2,1+order/2:size(y,2)-order/2);
 end
 
 % initial conditions
@@ -80,7 +78,7 @@ end
 % fill in boundary conditions
 % code for Dirichlet left, right, top, down BCs
 % n = timestep
-function un = BCs(def,sigma_x,sigma_y,x,y,order,dx,dy,dt,un,n)
+function un = BCs(def,x,y,order,dx,dy,un)
     % dimensions of x and y
     mx = size(x,2);
     my = size(y,2);
@@ -93,13 +91,19 @@ function un = BCs(def,sigma_x,sigma_y,x,y,order,dx,dy,dt,un,n)
         for i = 1:mx
             un(i,ja-1) = 2*un(i,ja)-un(i,ja+1);
             un(i,jb+1) = 2*un(i,jb)-un(i,jb-1);
+            un(i,ja) = def.bottom(x(i),y(ja));
+            un(i,jb) = def.top(x(i),y(jb));
         end
         for j = 1:my
             un(ia-1,j) = 2*un(ia,j)-un(ia+1,j);
             un(ib+1,j) = 2*un(ib,j)-un(ib-1,j);
+            un(ia,j) = def.left(x(ia),y(j));
+            un(ib,j) = def.right(x(ib),y(j));
         end
     elseif (order == 4)
         for j = 1:my
+            un(ia,j) = def.left(x(ia),y(j));
+            un(ib,j) = def.right(x(ib),y(j));
             % Dirichlet left BC - discrete delta fcn
             % u(1) = un(ia-1,j)
             % u(2) = un(ia-2,j)
@@ -130,6 +134,8 @@ function un = BCs(def,sigma_x,sigma_y,x,y,order,dx,dy,dt,un,n)
             un(ib+2,j) = u(2);
         end
         for i = 1:mx
+            un(i,ja) = def.bottom(x(i),y(ja));
+            un(i,jb) = def.top(x(i),y(jb));
             % Dirichlet top BC - discrete delta fcn
             % u(1) = un(i,jb+1)
             % u(2) = un(i,jb+2)
