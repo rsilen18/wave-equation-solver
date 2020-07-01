@@ -1,14 +1,15 @@
 % driver code for waves_fdm_1d.m
 sigma = 0.2; % CFL condition: sigma <= 1
 icase = 1;  % flag for problem definition
-order = 2;  % 2nd or 4th order precision
+order = 4;  % 2nd or 4th order precision
 plot_flag = true;    % flag for turning on plot animation
+tz_flag = false;     % flag for twilight zone calculations
 
 % problem definition
 [def.a,def.b,def.c,def.N,def.t_f,def.f,def.g,def.left,def.right] = waves_fdm_1d_defs(icase);
 
 % Original problem
-[u,e] = waves_fdm_1d(def,sigma,plot_flag,order);
+% [u,e] = waves_fdm_1d(def,sigma,plot_flag,order,tz_flag);
 
 % hold on
 % x = linspace(0,3*pi/2,def.N+1);
@@ -28,8 +29,8 @@ errors_tz = zeros(1,3);
 for i = 1:3
     disp(i);
     def.N = N(i);
-    [u,e] = waves_fdm_1d(def,sigma,plot_flag,order);
-    [u_tz,e_tz] = waves_tz_1d(def,sigma,plot_flag,order);
+    [u,e] = waves_fdm_1d(def,sigma,plot_flag,order,false);
+    [u_tz,e_tz] = waves_fdm_1d(def,sigma,plot_flag,order,true);
     errors(i) = max(e);
     errors_tz(i) = max(e_tz);
 end
