@@ -1,7 +1,7 @@
 % driver code for waves_fdm_1d.m
 sigma = 0.2; % CFL condition: sigma <= 1
 icase = 1;  % flag for problem definition
-order = 4;  % 2nd or 4th order precision
+order = 6;  % 2nd or 4th order precision
 plot_flag = true;    % flag for turning on plot animation
 tz_flag = false;     % flag for twilight zone calculations
 
@@ -22,11 +22,11 @@ tz_flag = false;     % flag for twilight zone calculations
 % Convergence study
 icase = 1;
 plot_flag = false;
-h = [.1 .01 .001 ];
-N = [10 100 1000 ];
-errors = zeros(1,3);
-errors_tz = zeros(1,3);
-for i = 1:3
+h = [.1 .02 .01 .002 .001 ];
+N = 1./h;
+errors = zeros(1,size(h,2));
+errors_tz = zeros(1,size(h,2));
+for i = 1:size(h,2)
     disp(i);
     def.N = N(i);
     [u,e] = waves_fdm_1d(def,sigma,plot_flag,order,false);
@@ -34,14 +34,11 @@ for i = 1:3
     errors(i) = max(e);
     errors_tz(i) = max(e_tz);
 end
-h2 = h.^2;
-h3 = h.^3;
-h4 = h.^4;
-h5 = h.^5;
-h6 = h.^6;
+hp = h.^order;
 figure(2)
-loglog(h,errors,'o',h,errors_tz,'o',h,h2,h,h3,h,h4,h,h5,h,h6);
+loglog(h,errors,'o',h,errors_tz,'o',h,hp);
 xlabel("h");
 ylabel("|e|_{\infty}");
 title("Truncation Error");
-legend("error","error_{tz}","h^2","h^3","h^4","h^5","h^6");
+str = sprintf("h^{%d}",order);
+legend("error","error_{tz}",str);
