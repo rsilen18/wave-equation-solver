@@ -2,6 +2,7 @@
 
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <fcntl.h>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -193,12 +194,59 @@ void copy_array(double* dest, double* src, Def &def, int order) {
 	print out vector of values into CSV format:
 	{x_value, u_value}
 */
-void export_results(double* x, double* u, Def &def, int order) {
-	cout << "x,u" << endl;
+void print_results(double* x, double* u, Def &def, int order, FILE *fp = stdout) {
+	fprintf(fp,"x,u\n");
 	int ja = order/2;
 	int jb = def.N+order/2;
 	for (int i = ja; i <= jb; i++) {
-		cout << x[i] << "," << u[i] << endl;
+		fprintf(fp,"%f,%f\n",x[i],u[i]);
+	}
+}
+
+/**
+	Perform convergence study
+	Export results to CSVs
+*/
+void convergence_study(Def& def, int order, double sigma_) {
+	char* file_names[5] = {"icase1_1d_10.csv","icase1_1d_50.csv","icase1_1d_100.csv",
+		"icase1_1d_500.csv","icase1_1d_1000.csv"};
+	int n_values[5] = {10,50,100,500,1000};
+	for (int i = 0; i < 5; i++) {
+		FILE *fp = fopen(file_names[i],"w");
+		// setup
+		def.N = n_values[i];
+		double dx = (def.b-def.a)/def.N;
+		double nt = def.t_f/(sigma_*dx/def.c);
+		nt = ceil(nt);
+		double dt = def.t_f/nt;
+		double sigma = def.c*dt/dx;
+	
+		double *x;
+		init_x(&x, def, dx, order);
+
+		double *unm1, *un, *unp1;
+		alloc_time_steps(&unm1, &un, &unp1, def, order);
+
+		// main time stepping code
+		ICs(unm1, x, def, order);
+		first_time_step(un, unm1, x, def, sigma, order, dt);
+		BCs(un, x, def, sigma, order, dx, dt, 1);
+		int n = 2;
+		while (n*dt <= def.t_f) {
+			main_time_step(unp1, un, unm1, x, def, sigma, order, dt);
+			BCs(unp1, x, def, sigma, order, dx, dt, n);
+			copy_array(unm1, un, def, order);
+			copy_array(un, unp1, def, order);
+			n++;
+		}
+
+		print_results(x, unp1, def, order, fp);
+		fclose(fp);
+
+		delete[] x;
+		delete[] unm1;
+		delete[] un;
+		delete[] unp1;
 	}
 }
 
@@ -211,17 +259,20 @@ int main(int argc, char** argv) {
 	argv[2] = sigma
 	argv[3] = N
 	argv[4] = t_f
-	argv[5] (optional) = icase (default is 1)
+	argv[5] = icase 
+	argv[6] = (optional) convergence study flag (Y/N): default NO 
 	*/
 	Def def = Def();
-	if (argc == 6) {
-		fill_def(def, atoi(argv[3]), stod(argv[4]), atoi(argv[5]));
-	} else if (argc == 5) {
-		fill_def(def, atoi(argv[3]), stod(argv[4]), 1);
+	char convergence_flag;
+	if (argc == 7) {
+		convergence_flag = argv[6][0];
+	} else if (argc == 6) {
+		convergence_flag = 'N';
 	} else {
-		fprintf(stderr, "Usage: ./waves_fdm_1d.out [order] [sigma] [N] [t_f] [icase (optional)]\n");
+		fprintf(stderr, "Usage: ./waves_fdm_1d.out [order] [sigma] [N] [t_f] [icase] [convergence_flag]\n");
 		return EXIT_FAILURE;
 	}
+	fill_def(def, atoi(argv[3]), stod(argv[4]), atoi(argv[5]));
 	int order = atoi(argv[1]);
 	double sigma = stod(argv[2]);
 
@@ -253,12 +304,15 @@ int main(int argc, char** argv) {
 		n++;
 	}
 
-	export_results(x, unp1, def, order);
+	print_results(x, unp1, def, order);
 
 	delete[] x;
 	delete[] unm1;
 	delete[] un;
 	delete[] unp1;
+
+	if (convergence_flag == 'Y')
+		convergence_study(def, order, sigma);
 	
 	return EXIT_SUCCESS;
 }
