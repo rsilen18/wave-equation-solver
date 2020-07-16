@@ -82,7 +82,7 @@ void init_x(double **x, const Def &def, double dx, int order) {
 	}
 	// right ghost points
 	for (int i = def.N+order/2+1; i < def.N+order+1; i++) {
-		(*x)[i] = def.b+dx*(i-(def.N+3*order/2));
+		(*x)[i] = def.b+dx*(i-(def.N+order/2));
 	}
 	// in-between points
 	for (int i = order/2+1; i < def.N+order/2; i++) {
@@ -147,6 +147,65 @@ void first_time_step(double* un, double* unm1, double* x, const Def &def,
 	}
 }
 
+// discrete delta fcn for left Dirichlet BC
+double* f_left(double* u, double* un, int ja, Def &def, double dx) {
+	double *val = (double*) calloc(2, sizeof(double));
+	val[0] = pow(def.c,2)/pow(dx,2)*(
+				un[ja+1]
+			 -2*un[ja]
+			 +  u[0]
+			 -1/12*(
+			  	   un[ja+2]
+			    -4*un[ja+1]
+			    +6*un[ja]
+			    -4*u[0]
+			    +  u[1]
+			  )
+			);
+	val[1] = pow(def.c,4)/pow(dx,4)*(
+				un[ja+2]
+			 -4*un[ja+1]
+			 +6*un[ja]
+			 -4*u[0]
+			 +  u[1]
+			);
+	return val;
+}
+
+// discrete delta fcn for right Neumann BC
+double* f_right(double* u, double* un, int jb, Def &def, double dx, int n, double dt) {
+	double *val = (double*) calloc(2, sizeof(double));
+	val[0] = 	u[0]
+			   -un[jb-1]
+			   -1/3*(
+			   		u[1]
+			   	 -2*u[0]
+			   	 +2*un[jb-1]
+			   	 -  un[jb-2]
+			   	)
+			   -2*dx*def.right(n*dt);
+    val[1] = 	u[1]
+    		 -2*u[0]
+    		 +2*un[jb-1]
+    		 -  un[jb-2];
+    return val;
+}
+
+// solve 2x2 linear system using dgesv
+void solve_2x2(double *A, double *x, double *b) {
+	int N = 2;
+	int NRHS = 1;
+	int LDA = 2;
+	int *IPIV = (int*) calloc(2, sizeof(int));
+	int LDB = 2;
+	int INFO;
+
+	dgesv_(&N,&NRHS,A,&LDA,IPIV,b,&LDB,&INFO);
+	x[0] = b[0];
+	x[1] = b[1];
+	free(IPIV);
+}
+
 /** fill in boundary conditions
 	code for Dirichlet left BC, Neumann right BC
 	n = timestep
@@ -159,7 +218,94 @@ void BCs(double* un, double* x, Def &def, double sigma, int order,
 		un[ja-1] = 2*un[ja]-un[ja+1];
 		un[jb+1] = un[jb-1]+2*dx*def.right(n*dt);
 	} else if (order == 4) {
-		
+		// Dirichlet left BC - discrete delta fcn
+		// u[0] = un[ja-1]
+		// u[1] = un[ja-2]
+		double *u = (double*) calloc(2, sizeof(double));
+		u[0] = 0;
+		u[1] = 0;
+		double *f0 = f_left(u,un,ja,def,dx);
+		u[0] = 1;
+		double *f1 = f_left(u,un,ja,def,dx);
+		u[0] = 0;
+		u[1] = 1;
+		double *f2 = f_left(u,un,ja,def,dx);
+		// set up 'A' matrix
+		double *df_du = (double*) calloc(4, sizeof(double));
+		df_du[0] = f1[0]-f0[0];
+		df_du[1] = f1[1]-f0[1];
+		df_du[2] = f2[0]-f0[0];
+		df_du[3] = f2[1]-f0[1];
+		// negate f0
+		double *b = (double*) calloc(2, sizeof(double));
+		b[0] = -1*f0[0];
+		b[1] = -1*f0[1];
+		solve_2x2(df_du,u,b);
+		// assign ghost points
+		un[ja-1] = u[0];
+		un[ja-2] = u[1];
+		// free memory
+		free(u);
+		free(b);
+		free(f0);
+		free(f1);
+		free(f2);
+		free(df_du);
+
+		// Neumann right BC
+		// double *A = (double*) calloc(4, sizeof(double));
+		// A[0] = 2/3;
+		// A[1] = -2;
+		// A[2] = -1/12;
+		// A[3] = 1;
+		// b = (double*) calloc(2, sizeof(double));
+		// b[0] =   2/3*un[jb-1]
+		// 	   -1/12*un[jb-2]
+		// 	   +dx*def.right(n*dt);
+		// b[1] = -2*un[jb-1]
+		// 	   +  un[jb-2]
+		// 	   +2*dx/pow(sigma,2)*(
+		// 	   		def.right((n+1)*dt)
+		// 	   	 -2*def.right(n*dt)
+		// 	   	 +  def.right((n-1)*dt)
+		// 	   	);
+		// u = (double*) calloc(2, sizeof(double));
+		// solve_2x2(A,u,b);
+		// un[jb+1] = u[0];
+		// un[jb+2] = u[1];
+		// free(A);
+		// free(b);
+		// free(u);
+		u = (double*) calloc(2, sizeof(double));
+		u[0] = 0;
+		u[1] = 0;
+		f0 = f_right(u,un,jb,def,dx,n,dt);
+		u[0] = 1;
+		f1 = f_right(u,un,jb,def,dx,n,dt);
+		u[0] = 0;
+		u[1] = 1;
+		f2 = f_right(u,un,jb,def,dx,n,dt);
+		// set up 'A' matrix
+		df_du = (double*) calloc(4, sizeof(double));
+		df_du[0] = f1[0]-f0[0];
+		df_du[1] = f1[1]-f0[1];
+		df_du[2] = f2[0]-f0[0];
+		df_du[3] = f2[1]-f0[1];
+		// negate f0
+		b = (double*) calloc(2, sizeof(double));
+		b[0] = -1*f0[0];
+		b[1] = -1*f0[1];
+		solve_2x2(df_du,u,b);
+		// assign ghost points
+		un[jb+1] = u[0];
+		un[jb+2] = u[1];
+		// free memory
+		free(u);
+		free(b);
+		free(f0);
+		free(f1);
+		free(f2);
+		free(df_du);
 	}
 }
 
@@ -178,6 +324,15 @@ void main_time_step(double* unp1, double* un, double* unm1, double* x, const Def
 				  	 -2*un[i]
 				  	 +  un[i-1]
 				  	);
+		if (order >= 4) {
+			unp1[i] += (pow(sigma,4)-pow(sigma,2))/12*(
+						  	  un[i+2]
+						   -4*un[i+1]
+						   +6*un[i]
+						   -4*un[i-1]
+						   +  un[i-2]
+						);
+		}
 	}
 }
 
@@ -199,7 +354,7 @@ void print_results(double* x, double* u, Def &def, int order, FILE *fp = stdout)
 	int ja = order/2;
 	int jb = def.N+order/2;
 	for (int i = ja; i <= jb; i++) {
-		fprintf(fp,"%f,%f\n",x[i],u[i]);
+		fprintf(fp,"%.16f,%.16f\n",x[i],u[i]);
 	}
 }
 
@@ -274,15 +429,15 @@ int main(int argc, char** argv) {
 	}
 	fill_def(def, atoi(argv[3]), stod(argv[4]), atoi(argv[5]));
 	int order = atoi(argv[1]);
-	double sigma = stod(argv[2]);
+	double sigma_ = stod(argv[2]);
 
 	/* -------- setup ------------------ */
 
 	double dx = (def.b-def.a)/def.N;
-	double nt = def.t_f/(sigma*dx/def.c);
+	double nt = def.t_f/(sigma_*dx/def.c);
 	nt = ceil(nt);
 	double dt = def.t_f/nt;
-	sigma = def.c*dt/dx;
+	double sigma = def.c*dt/dx;
 
 	double *x;
 	init_x(&x, def, dx, order);
@@ -312,7 +467,7 @@ int main(int argc, char** argv) {
 	delete[] unp1;
 
 	if (convergence_flag == 'Y')
-		convergence_study(def, order, sigma);
+		convergence_study(def, order, sigma_);
 	
 	return EXIT_SUCCESS;
 }
