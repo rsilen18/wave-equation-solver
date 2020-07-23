@@ -144,11 +144,58 @@ void first_time_step(double* un, double* unm1, double* x, const Def &def,
 						+  unm1[i-2]
 					);
 		}
+		if (order >= 6) {
+			un[i] += pow(sigma,2)/180*(
+							unm1[i+3]
+						- 6*unm1[i+2]
+						+15*unm1[i+1]
+						-20*unm1[i]
+						+15*unm1[i-1]
+						- 6*unm1[i-2]
+						+	unm1[i-3]
+					)
+					+dt*pow(sigma,2)/540*(
+							def.g(x[i+3])
+						- 6*def.g(x[i+2])
+						+15*def.g(x[i+1])
+						-20*def.g(x[i])
+						+15*def.g(x[i-1])
+						- 6*def.g(x[i-2])
+						+   def.g(x[i-3])
+					)
+					+pow(sigma,4)/(24*72)*(
+							unm1[i+3]
+						- 6*unm1[i+2]
+						+15*unm1[i+1]
+						-20*unm1[i]
+						+15*unm1[i-1]
+						- 6*unm1[i-2]
+						+	unm1[i-3]
+					)
+					-dt*pow(sigma,4)/120*(
+							def.g(x[i+3])
+						- 6*def.g(x[i+2])
+						+15*def.g(x[i+1])
+						-20*def.g(x[i])
+						+15*def.g(x[i-1])
+						- 6*def.g(x[i-2])
+						+   def.g(x[i-3])
+					)
+					+pow(sigma,6)/720*(
+							unm1[i+3]
+						- 6*unm1[i+2]
+						+15*unm1[i+1]
+						-20*unm1[i]
+						+15*unm1[i-1]
+						- 6*unm1[i-2]
+						+	unm1[i-3]
+					);
+		}
 	}
 }
 
-// discrete delta fcn for left Dirichlet BC
-double* f_left(double* u, double* un, int ja, Def &def, double dx) {
+// discrete delta fcn (2x2) for left Dirichlet BC
+double* f_left2(double* u, double* un, int ja, Def &def, double dx) {
 	double *val = (double*) calloc(2, sizeof(double));
 	val[0] = pow(def.c,2)/pow(dx,2)*(
 				un[ja+1]
@@ -172,8 +219,8 @@ double* f_left(double* u, double* un, int ja, Def &def, double dx) {
 	return val;
 }
 
-// discrete delta fcn for right Neumann BC
-double* f_right(double* u, double* un, int jb, Def &def, double dx, int n, double dt) {
+// discrete delta fcn (2x2) for right Neumann BC
+double* f_right2(double* u, double* un, int jb, Def &def, double dx, int n, double dt) {
 	double *val = (double*) calloc(2, sizeof(double));
 	val[0] = 	u[0]
 			   -un[jb-1]
@@ -191,6 +238,94 @@ double* f_right(double* u, double* un, int jb, Def &def, double dx, int n, doubl
     return val;
 }
 
+// discrete delta fcn (3x3) for left Dirichlet BC
+double* f_left3(double* u, double* un, int ja, Def &def, double dx, int n, double dt) {
+	double *val = (double*) calloc(3, sizeof(double));
+	val[0] =   1/90*un[ja+3]
+			 - 3/20*un[ja+2]
+			 +  3/2*un[ja+1]
+			 -49/18*un[ja]
+			 +  3/2*u[0]
+			 - 3/20*u[1]
+			 + 1/90*u[2]
+			 -def.left(n*dt);
+	val[1] = - 1/6*un[ja+3]
+			 +   2*un[ja+2]
+			 -13/2*un[ja+1]
+			 +28/3*un[ja]
+			 -13/2*u[0]
+			 +   2*u[1]
+			 - 1/6*u[2];
+	val[2] = 	 un[ja+3]
+			 - 6*un[ja+2]
+			 +15*un[ja+1]
+			 -20*un[ja]
+			 +15*u[0]
+			 - 6*u[1]
+			 +	 u[2];
+	return val;		
+}
+
+// discrete delta fcn (3x3) for right Neumann BC
+double *f_right3(double *u, double *un, int jb, Def &def, double dx, int n, double dt) {
+	double *val = (double*) calloc(3, sizeof(double));
+	val[0] =  u[0]
+			 -un[jb-1]
+			 -1/6*(
+			 	  u[1]
+			   -2*u[0]
+			   +2*un[jb-1]
+			   -  un[jb-2]
+			 )
+			 +1/30*(
+			 	  u[2]
+			   -4*u[1]
+			   +5*u[0]
+			   -5*un[jb-1]
+			   +4*un[jb-2]
+			   -  un[jb-3]
+			 )
+			 -2*dx*def.right(n*dt);
+	val[1] =    u[1]
+			 -2*u[0]
+			 +2*un[jb-1]
+			 -  un[jb-2]
+			 +1/30*(
+			 	   u[2]
+			 	-4*u[1]
+			 	+5*u[0]
+			 	-5*un[jb-1]
+			 	+4*un[jb-2]
+			 	-  un[jb-3]   
+			 );
+	val[2] = 	u[2]
+			 -4*u[1]
+			 +5*u[0]
+			 -5*un[jb-1]
+			 +4*un[jb-2]
+			 -  un[jb-3];
+ 	return val;
+}
+
+void fill_df_du(double *df_du, double *f0, double *f1, double *f2, double *f3=NULL) {
+	// 2x2
+	if (f3 == NULL) {
+		df_du[0] = f1[0]-f0[0];
+		df_du[1] = f1[1]-f0[1];
+		df_du[2] = f2[0]-f0[0];
+		df_du[3] = f2[1]-f0[1];
+	}
+	// 3x3
+	else {
+		double* fs[3] = {f1,f2,f3};
+		for (int r = 0; r < 3; r++) {
+			for (int c = 0; c < 3; c++) {
+				df_du[ind2D(r,c,3,3)] = fs[c][r]-f0[r];
+			}
+		}
+	}
+}
+
 // solve 2x2 linear system using dgesv
 void solve_2x2(double *A, double *x, double *b) {
 	int N = 2;
@@ -203,6 +338,22 @@ void solve_2x2(double *A, double *x, double *b) {
 	dgesv_(&N,&NRHS,A,&LDA,IPIV,b,&LDB,&INFO);
 	x[0] = b[0];
 	x[1] = b[1];
+	free(IPIV);
+}
+
+// solve 3x3 linear system using dgesv
+void solve_3x3(double *A, double *x, double *b) {
+	int N = 3;
+	int NRHS = 1;
+	int LDA = 3;
+	int *IPIV = (int*) calloc(3, sizeof(int));
+	int LDB = 3;
+	int INFO;
+
+	dgesv_(&N,&NRHS,A,&LDA,IPIV,b,&LDB,&INFO);
+	x[0] = b[0];
+	x[1] = b[1];
+	x[2] = b[2];
 	free(IPIV);
 }
 
@@ -224,18 +375,19 @@ void BCs(double* un, double* x, Def &def, double sigma, int order,
 		double *u = (double*) calloc(2, sizeof(double));
 		u[0] = 0;
 		u[1] = 0;
-		double *f0 = f_left(u,un,ja,def,dx);
+		double *f0 = f_left2(u,un,ja,def,dx);
 		u[0] = 1;
-		double *f1 = f_left(u,un,ja,def,dx);
+		double *f1 = f_left2(u,un,ja,def,dx);
 		u[0] = 0;
 		u[1] = 1;
-		double *f2 = f_left(u,un,ja,def,dx);
+		double *f2 = f_left2(u,un,ja,def,dx);
 		// set up 'A' matrix
 		double *df_du = (double*) calloc(4, sizeof(double));
-		df_du[0] = f1[0]-f0[0];
-		df_du[1] = f1[1]-f0[1];
-		df_du[2] = f2[0]-f0[0];
-		df_du[3] = f2[1]-f0[1];
+		// df_du[0] = f1[0]-f0[0];
+		// df_du[1] = f1[1]-f0[1];
+		// df_du[2] = f2[0]-f0[0];
+		// df_du[3] = f2[1]-f0[1];
+		fill_df_du(df_du,f0,f1,f2);
 		// negate f0
 		double *b = (double*) calloc(2, sizeof(double));
 		b[0] = -1*f0[0];
@@ -252,45 +404,25 @@ void BCs(double* un, double* x, Def &def, double sigma, int order,
 		free(f2);
 		free(df_du);
 
-		// Neumann right BC
-		// double *A = (double*) calloc(4, sizeof(double));
-		// A[0] = 2/3;
-		// A[1] = -2;
-		// A[2] = -1/12;
-		// A[3] = 1;
-		// b = (double*) calloc(2, sizeof(double));
-		// b[0] =   2/3*un[jb-1]
-		// 	   -1/12*un[jb-2]
-		// 	   +dx*def.right(n*dt);
-		// b[1] = -2*un[jb-1]
-		// 	   +  un[jb-2]
-		// 	   +2*dx/pow(sigma,2)*(
-		// 	   		def.right((n+1)*dt)
-		// 	   	 -2*def.right(n*dt)
-		// 	   	 +  def.right((n-1)*dt)
-		// 	   	);
-		// u = (double*) calloc(2, sizeof(double));
-		// solve_2x2(A,u,b);
-		// un[jb+1] = u[0];
-		// un[jb+2] = u[1];
-		// free(A);
-		// free(b);
-		// free(u);
+		// Neumann right BC - discrete delta fcn
+		// u[0] = un[jb+1]
+		// u[1] = un[jb+2]
 		u = (double*) calloc(2, sizeof(double));
 		u[0] = 0;
 		u[1] = 0;
-		f0 = f_right(u,un,jb,def,dx,n,dt);
+		f0 = f_right2(u,un,jb,def,dx,n,dt);
 		u[0] = 1;
-		f1 = f_right(u,un,jb,def,dx,n,dt);
+		f1 = f_right2(u,un,jb,def,dx,n,dt);
 		u[0] = 0;
 		u[1] = 1;
-		f2 = f_right(u,un,jb,def,dx,n,dt);
+		f2 = f_right2(u,un,jb,def,dx,n,dt);
 		// set up 'A' matrix
 		df_du = (double*) calloc(4, sizeof(double));
-		df_du[0] = f1[0]-f0[0];
-		df_du[1] = f1[1]-f0[1];
-		df_du[2] = f2[0]-f0[0];
-		df_du[3] = f2[1]-f0[1];
+		// df_du[0] = f1[0]-f0[0];
+		// df_du[1] = f1[1]-f0[1];
+		// df_du[2] = f2[0]-f0[0];
+		// df_du[3] = f2[1]-f0[1];
+		fill_df_du(df_du,f0,f1,f2);
 		// negate f0
 		b = (double*) calloc(2, sizeof(double));
 		b[0] = -1*f0[0];
@@ -305,6 +437,78 @@ void BCs(double* un, double* x, Def &def, double sigma, int order,
 		free(f0);
 		free(f1);
 		free(f2);
+		free(df_du);
+	} else if (order == 6) {
+		// Dirichlet left BC - discrete delta fcn
+		double *u = (double*) calloc(3, sizeof(double));
+		u[0] = 0;
+		u[1] = 0;
+		u[2] = 0;
+		double *f0 = f_left3(u,un,ja,def,dx,n,dt);
+		u[0] = 1;
+		double *f1 = f_left3(u,un,ja,def,dx,n,dt);
+		u[0] = 0;
+		u[1] = 1;
+		double *f2 = f_left3(u,un,ja,def,dx,n,dt);
+		u[1] = 0;
+		u[2] = 1;
+		double *f3 = f_left3(u,un,ja,def,dx,n,dt);
+		// set up 'A' matrix
+		double *df_du = (double*) calloc(9, sizeof(double));
+		fill_df_du(df_du,f0,f1,f2,f3);
+		// negate f0
+		double *b = (double*) calloc(3, sizeof(double));
+		b[0] = -1*f0[0];
+		b[1] = -1*f0[1];
+		b[2] = -1*f0[2];
+		solve_3x3(df_du,u,b);
+		// assign ghost points
+		un[ja-1] = u[0];
+		un[ja-2] = u[1];
+		un[ja-3] = u[2];
+		// free memory
+		free(u);
+		free(b);
+		free(f0);
+		free(f1);
+		free(f2);
+		free(f3);
+		free(df_du);
+
+		// Neumann right BC
+		u = (double*) calloc(3, sizeof(double));
+		u[0] = 0;
+		u[1] = 0;
+		u[2] = 0;
+		f0 = f_right3(u,un,jb,def,dx,n,dt);
+		u[0] = 1;
+		f1 = f_right3(u,un,jb,def,dx,n,dt);
+		u[0] = 0;
+		u[1] = 1;
+		f2 = f_right3(u,un,jb,def,dx,n,dt);
+		u[1] = 0;
+		u[2] = 1;
+		f3 = f_right3(u,un,jb,def,dx,n,dt);
+		// set up 'A' matrix
+		df_du = (double*) calloc(9, sizeof(double));
+		fill_df_du(df_du,f0,f1,f2,f3);
+		// negate f0
+		b = (double*) calloc(3, sizeof(double));
+		b[0] = -1*f0[0];
+		b[1] = -1*f0[1];
+		b[2] = -1*f0[2];
+		solve_3x3(df_du,u,b);
+		// assign ghost points
+		un[jb+1] = u[0];
+		un[jb+2] = u[1];
+		un[jb+3] = u[2];
+		// free memory
+		free(u);
+		free(b);
+		free(f0);
+		free(f1);
+		free(f2);
+		free(f3);
 		free(df_du);
 	}
 }
@@ -331,6 +535,17 @@ void main_time_step(double* unp1, double* un, double* unm1, double* x, const Def
 						   +6*un[i]
 						   -4*un[i-1]
 						   +  un[i-2]
+						);
+		}
+		if (order >= 6) {
+			unp1[i] += (pow(sigma,2)/90-pow(sigma,4)/72+pow(sigma,6)/360)*(
+								un[i+3]
+							- 6*un[i+2]
+							+15*un[i+1]
+							-20*un[i]
+							+15*un[i-1]
+							- 6*un[i-2]
+							+	un[i-3]
 						);
 		}
 	}
