@@ -1,9 +1,8 @@
 % driver code for waves_fdm_2d.m
-sigma_x = .5; % CFL condition: sigma <= 1
-sigma_y = .5; 
+cfl = .5;   % CFL condition: cfl in (0,1)
 icase = 1;  % flag for problem definition
 order = 2;
-plot_flag = true;    % flag for turning on plot animation
+plot_flag = false;    % flag for turning on plot animation
 
 % problem definition
 [def.a_x,def.b_x,def.a_y,def.b_y,def.c,def.N,def.t_f,...
@@ -11,28 +10,36 @@ plot_flag = true;    % flag for turning on plot animation
     = waves_fdm_2d_defs(icase);
 
 % Original problem
-% u = waves_fdm_2d(def,sigma_x,sigma_y,plot_flag,order);
+% u = waves_fdm_2d(def,cfl,plot_flag,order);
+
+% [u_tz,e_tz] = waves_tz_2d(def,cfl,plot_flag,order);
 
 % Convergence study
 icase = 1;
 plot_flag = false;
-h = [.1 .01 ];
-N = [10 100 ];
-errors_tz = zeros(1,2);
-for i = 1:2
+h = [.1 .05 .025 ];
+N = 1./h;
+errors_tz = zeros(1,size(h,2));
+for i = 1:size(h,2)
     disp(i);
     def.N = N(i);
-    [u_tz,e_tz] = waves_tz_2d(def,sigma_x,sigma_y,plot_flag,order);
+    [u_tz,e_tz] = waves_tz_2d(def,cfl,plot_flag,order);
     errors_tz(i) = max(max(e_tz));
+%     figure(i+1)
+    % plot error surface
+%     x = linspace(def.a_x,def.b_x,def.N+1);
+%     y = linspace(def.a_y,def.b_y,def.N+1);
+%     surf(x,y,e_tz);
+%     xlabel("x");
+%     ylabel("y");
+%     str = sprintf("Error surface plot for h=%f",h(i));
+%     title(str);
 end
-h2 = h.^2;
-h3 = h.^3;
-h4 = h.^4;
-h5 = h.^5;
-h6 = h.^6;
-figure(2)
-loglog(h,errors_tz,'o',h,h2,h,h3,h,h4,h,h5,h,h6);
+hp = h.^order;
+figure(size(h,2)+2)
+loglog(h,errors_tz,'o',h,hp);
 xlabel("h");
 ylabel("|e|_{\infty}");
 title("Truncation Error");
-legend("error_{tz}","h^2","h^3","h^4","h^5","h^6");
+str = sprintf("h^{%d}",order);
+legend("error_{tz}",str);

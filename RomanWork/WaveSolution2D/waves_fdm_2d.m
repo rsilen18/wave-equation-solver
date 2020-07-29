@@ -3,17 +3,13 @@
 %      u(x,0,t)=u(x,b,t) = 0        0 <= x <= a
 % ICs: u(x,y,0) = f(x,y), u_t(x,y,0) = g(x,y)
 
-function u = waves_fdm_2d(def,sigma_x,sigma_y,plot_flag,order)
+function u = waves_fdm_2d(def,cfl,plot_flag,order)
     dx = (def.b_x-def.a_x)/def.N;
-    nt = def.t_f/(sigma_x*dx/def.c);
-    nt = ceil(nt);
+    dy = (def.b_y-def.a_y)/def.N;
+    dt = cfl*dx*dy/def.c*sqrt(1/(dx^2+dy^2));
+    nt = ceil(def.t_f/dt);
     dt = def.t_f/nt;
     sigma_x = def.c*dt/dx;
-    
-    dy = (def.b_y-def.a_y)/def.N;
-    nt = def.t_f/(sigma_y*dy/def.c);
-    nt = ceil(nt);
-    dt = def.t_f/nt;
     sigma_y = def.c*dt/dy;
 
     x = linspace(def.a_x-dx*order/2,def.b_x+dx*order/2,def.N+order+1);
