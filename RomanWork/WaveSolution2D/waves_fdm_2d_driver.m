@@ -1,7 +1,7 @@
 % driver code for waves_fdm_2d.m
 cfl = .5;   % CFL condition: cfl in (0,1)
 icase = 1;  % flag for problem definition
-order = 2;
+order = 4;
 plot_flag = false;    % flag for turning on plot animation
 
 % problem definition
@@ -17,7 +17,7 @@ plot_flag = false;    % flag for turning on plot animation
 % Convergence study
 icase = 1;
 plot_flag = false;
-h = [.1 .05 .025 ];
+h = [.1 .05 .04 .025 .02 .125 .01];
 N = 1./h;
 errors_tz = zeros(1,size(h,2));
 for i = 1:size(h,2)
