@@ -12,4 +12,4 @@ The directory `./WaveSolution1D/` contains MATLAB and C++ implementations of a 1
 
 ## 2-D Wave Equation Solver
 
-The director `./WaveSolution2D/` contains a working MATLAB implementation and in-progress C++ implementation of a 2-D wave equation solver.  
+The directory `./WaveSolution2D/` contains a working MATLAB implementation and in-progress C++ implementation of a 2-D wave equation solver.  
